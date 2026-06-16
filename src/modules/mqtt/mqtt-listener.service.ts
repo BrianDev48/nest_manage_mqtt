@@ -25,17 +25,18 @@ export class MqttListenerService implements OnModuleInit {
   }
 
   private processMessage = (topic: string, message: string) => {
+    this.logger.log(`Mensaje crudo recibido en [${topic}]: ${message.substring(0, 100)}...`);
+
     try {
       const data = JSON.parse(message);
-      this.logger.log(`Mensaje recibido en [${topic}]`);
       this.processorService.sendToLaravel(topic, data);
     } catch (error: unknown) {
-        const message =
-          error instanceof Error ? error.message : String(error);
+      const errorMessage = 
+        error instanceof Error ? error.message : String(error);
+      this.logger.error(
+        `Error al procesar JSON de [${topic}]: ${errorMessage}`,
+      );
 
-        this.logger.error(
-          `Error al procesar mensaje de [${topic}]: ${message}`,
-        );
     }
   };
 
@@ -47,12 +48,7 @@ export class MqttListenerService implements OnModuleInit {
     }));
     
     this.mqttService.setForcedTopics(forcedTopics);
+    this.logger.log('Tópicos MQTT configurados para escucha...');
 
-    // Se suscribe a los tópicos
-    this.topicsToListen.forEach((topic) => {
-      this.mqttService.subscribe(topic, this.processMessage);
-    });
-
-    this.logger.log('Escuchando topics MQTT...');
   }
 }
